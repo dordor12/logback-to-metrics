@@ -1,3 +1,3 @@
-rootProject.name = "java-library-template"
+rootProject.name = "logback-to-metrics"
 
-include("java-library-template")
+include("logback-to-metrics")

@@ -1,4 +1,4 @@
-package dev.thriving.oss.java.library.template;
+package org.acme.fancy.lib;
 
 import org.junit.jupiter.api.Test;
 

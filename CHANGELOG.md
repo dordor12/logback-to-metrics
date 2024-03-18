@@ -5,8 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## Template [x.y.z](https://github.com/thriving-dev/java-library-template/releases/tag/x.y.z) (yyyy-mm-dd)
-[a.b.c...x.y.z](https://github.com/thriving-dev/java-library-template/compare/a.b.c...x.y.z)
+## Template [x.y.z](https://github.com/dordor12/logback-to-metrics/releases/tag/x.y.z) (yyyy-mm-dd)
+[a.b.c...x.y.z](https://github.com/dordor12/logback-to-metrics/compare/a.b.c...x.y.z)
 
 ### Added
 - for new features

@@ -1,17 +1,12 @@
-# java-library-template 🎨
+# logback-to-metrics
 
 [![Use this template](https://img.shields.io/badge/from-java--library--template-brightgreen?logo=dropbox)](https://github.com/thriving-dev/java-library-template/generate)
-[![Java CI](https://github.com/thriving-dev/java-library-template/actions/workflows/1.pipeline.yml/badge.svg)](https://github.com/thriving-dev/java-library-template/actions/workflows/1.pipeline.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/dev.thriving.oss/java-library-template.svg)](https://central.sonatype.com/artifact/dev.thriving.oss/java-library-template)
+[![Java CI](https://github.com/dordor12/logback-to-metrics/actions/workflows/1.pipeline.yml/badge.svg)](https://github.com/dordor12/logback-to-metrics/actions/workflows/1.pipeline.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.dordor12/logback-to-metrics.svg)](https://central.sonatype.com/artifact/io.github.dordor12/logback-to-metrics)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![Javadoc](https://img.shields.io/badge/JavaDoc-Online-green)](https://thriving-dev.github.io/java-library-template/javadoc/)
-[![CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Javadoc](https://img.shields.io/badge/JavaDoc-Online-green)](https://dordor12.github.io/logback-to-metrics/javadoc/)
 
-_TLDR:_ Java Library GitHub Template Repository
-
-* [<img src="https://github-production-user-asset-6210df.s3.amazonaws.com/10864443/270873951-641a38c4-10e7-4b75-8dc0-1b5d473f07b3.svg" width="20"> Introducing 'java-library-template' in 60s - YouTube](https://www.youtube.com/watch?v=nXs7hSV6ris&list=PL1tfxqbktkFYK5zYjfHxt4wFOus5R9Y3g)   
-* https://thriving.dev/blog/java-library-development-get-started-quickly-with-java-library-template
-
+Automated migration completed, enjoy the template.
 
 ## Features
 - 🥷 One-click **automated initial project migration workflow** (GitHub Action)
@@ -23,9 +18,7 @@ _TLDR:_ Java Library GitHub Template Repository
 - **Javadoc** deployed with **GitHub Pages**
 - Open Source **Community ready** (Code of Conduct, Contribution guidelines, Issue & PR Templates)
 
-
 ## Quick Start
-**Demo on YouTube**: [<img src="https://github-production-user-asset-6210df.s3.amazonaws.com/10864443/270873951-641a38c4-10e7-4b75-8dc0-1b5d473f07b3.svg" width="20"> java-library-template 1/7: Getting started (generate from; create PAT, one-click migrate)](https://www.youtube.com/watch?v=lDfg9D0A-nA&list=PL1tfxqbktkFYK5zYjfHxt4wFOus5R9Y3g)
 1. [Use this template](https://github.com/thriving-dev/java-library-template/generate) to create your own repository
 2. Create & provide a PAT (Personal Access Token) for the CI/CD pipeline
 
@@ -34,7 +27,7 @@ _TLDR:_ Java Library GitHub Template Repository
    The jobs expect a secret by the name `CI_GITHUB_TOKEN` that holds a PAT with _write_ permission for _Content_.
 
    To create a new access token, the following steps are required (ref [GitHub documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)):
-   1. If the new repo owner is an organisation, **enrol** the organisation for '**Fine-grained personal access tokens**'. In the organisation '**Settings > Third-party Access > Personal access tokens**'.
+   1. If the new repo owner is an organisation, **enrol** the organisation for '**Fine-grained personal access tokens**'. In the organisation ['Settings > Third-party Access > Personal access tokens'](https://github.com/organizations/dordor12/settings/personal-access-tokens).
    2. Head to the [Developer settings](https://github.com/settings/tokens?type=beta) and **enrol** your personal account for the new '**Fine-grained personal access tokens**'. (That's a one-off for your account and you might already have done this before)
    3. Next, click on the button '**Generate new token**' and create a token for the target _**Resource owner**_, with access to your project and the following '**Repository Permissions**'
       * **Contents:** **Read** and **Write** access to code
@@ -59,7 +52,7 @@ _TLDR:_ Java Library GitHub Template Repository
 
 4. Final one-off tasks
    * Choose & update the LICENSE, [here](LICENSE)
-   * Update _Maven Publication_ details [here](java-library-template/build.gradle.kts#L6-L13)
+   * Update _Maven Publication_ details [here](logback-to-metrics/build.gradle.kts#L6-L13)
    * [Configure GitHub Pages](#prerequisites-configure-github-pages) to deploy branch 'gh-pages' (Javadoc)
    * Add secrets required for [publishing to Maven Central](#prerequisites-sonatype-credentials--gpg-signing-key)
    * Install & configure renovate app ([instructions](#prerequisites-enable--configure-renovate))
@@ -68,7 +61,7 @@ _TLDR:_ Java Library GitHub Template Repository
 The project template consists of three top-level _folders_:
 * `.github/`: Defines the GitHub Actions CI tasks and templates for new pull requests, issues, etc.
 * `gradle/`: Contains Gradle Configuration files such as the Gradle [Version Catalog](https://docs.gradle.org/current/userguide/platforms.html) and the Gradle Wrapper.
-* `java-library-template/`: The library source code (Gradle sub-project).
+* `logback-to-metrics/`: The library source code (Gradle sub-project).
 
 In addition, following _files_ are worth highlighting:
 * `gradle/libs.versions.toml`: A [conventional file](https://docs.gradle.org/current/userguide/platforms.html#sub:conventional-dependencies-toml) to declare a version catalog.
@@ -77,7 +70,7 @@ In addition, following _files_ are worth highlighting:
 * `**/build.gradle.kts`: Gradle build file
 
 ## CI/CD Pipeline
-The heart of this template is the 'Main GitHub Actions CI/CD Pipeline'. See it in [Actions](https://github.com/thriving-dev/java-library-template/actions/workflows/1.pipeline.yml) (👻).
+The heart of this template is the ['Main GitHub Actions CI/CD Pipeline'](https://github.com/dordor12/logback-to-metrics/actions/workflows/1.pipeline.yml).
 
 ![image](https://github.com/thriving-dev/java-library-template/assets/10864443/8e5436c3-f807-4617-9e77-6d21e9dfb7c2)
 
@@ -116,7 +109,7 @@ The GH actions job [callable.publish-sonatype.yml](.github/workflows/callable.pu
 | `GPG_SIGNING_KEY`        | The GPG private key to sign your artifacts (in ascii-armored format). You can obtain it with `gpg --armor --export-secret-keys <your@email.here>` or you can create one key online on [pgpkeygen.com](https://pgpkeygen.com). |
 | `GPG_SIGNING_PASSPHRASE` | The passphrase for unlocking the secret key. (you picked it when creating the key).                                                                                                                                           |
 
-Please define the secrets via your repository settings. (Settings > Security > Secrets and variables > Actions)
+Please define the secrets via your repository settings. ([Settings > Security > Secrets and variables > Actions](https://github.com/dordor12/logback-to-metrics/settings/secrets/actions))
 <img width="800" alt="Preview of Javadoc published to GitHub Pages by the CI/CD pipeline" src="https://github.com/thriving-dev/java-library-template/assets/10864443/e6cf928c-6665-43fc-9506-c29d210b18de">
 
 ## Release Process
@@ -152,7 +145,7 @@ A Javadoc website of your library, generated by gradle, is 'published' to GitHub
 <img width="680" alt="Preview of Javadoc published to GitHub Pages by the CI/CD pipeline" src="https://github.com/thriving-dev/java-library-template/assets/10864443/119e8055-2755-40d4-8ec4-69bdc2e5339b">
 
 ### Prerequisites: Configure GitHub Pages
-To host the generated Javadoc, configure GitHub Pages for your repository to deploy from branch `gh-pages`. You can also find all deployments under ['pages-build-deployment'](https://github.com/thriving-dev/java-library-template/actions/workflows/pages/pages-build-deployment).
+To host the generated Javadoc, configure GitHub Pages for your repository to deploy from branch `gh-pages`. You can also find all deployments under ['pages-build-deployment'](https://github.com/dordor12/logback-to-metrics/actions/workflows/pages/pages-build-deployment).
 
 > ℹ️ The branch is created with the first CI/CD pipeline run. ('Publish javadoc' job)
 
@@ -160,7 +153,7 @@ To host the generated Javadoc, configure GitHub Pages for your repository to dep
 
 ## Security & CodeQL Analysis
 ### Common Vulnerabilities and Exposures (CVE)
-The libraries gradle dependencies are scanned for known [CVE](https://www.cve.org/) with **[aquasecurity/trivy](https://github.com/aquasecurity/trivy)**. The scan results can be reviewed and managed under 'Security > Vulnerability alerts > Code scanning'.
+The libraries gradle dependencies are scanned for known [CVE](https://www.cve.org/) with **[aquasecurity/trivy](https://github.com/aquasecurity/trivy)**. The scan results can be reviewed and managed under [Security > Vulnerability alerts > Code scanning](https://github.com/dordor12/logback-to-metrics/security/code-scanning).
 
 Scans are triggered
 1. with each main CI/CD pipeline run
@@ -171,11 +164,6 @@ Scans are triggered
 Please refer to [official GitHub documentation](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning) for more details.
 
 ## Automated Dependency Updates with Renovate
-
-ℹ️ Renovate (RenovateBot) is a software tool that automates the process of keeping software dependencies up-to-date by scanning code repositories, identifying outdated dependencies, and generating automated pull requests to update them.
-
-It’s Open Source and Community-Driven, supports a wide range of programming languages and package managers, and integrates with GitHub & Gitlab as well as other popular CI/CD systems.
-
 ### Dependency Dashboard
 
 <img width="800" src="https://github.com/thriving-dev/java-library-template/assets/10864443/3300d418-8dee-4071-96df-dc53882315fd">
@@ -190,8 +178,4 @@ The recommended way to enable renovate is to use the [Renovate GitHub App](https
 
 
 ## Credits
-- inspired by https://github.com/cortinico/kotlin-android-template
-- PR & issue templates copied / adapted from https://github.com/nuxt/nuxt
-
-
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://github.com/thriving-dev/java-library-template">java-library-template</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://thriving.dev">thriving.dev</a> is licensed under <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-NC-SA 4.0</a></p>
+- Created by https://github.com/thriving-dev/java-library-template

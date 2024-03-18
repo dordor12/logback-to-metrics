@@ -1,4 +1,4 @@
-group = "dev.thriving.oss"
+group = "io.github.dordor12"
 
 plugins {
     alias(libs.plugins.publish)

@@ -8,7 +8,7 @@ body:
         Thank you for taking the time to fill out this bug report!
         
         Please carefully read the contribution docs before creating a bug report
-        👉 https://github.com/thriving-dev/java-library-template/blob/main/CONTRIBUTING.md
+        👉 https://github.com/dordor12/logback-to-metrics/blob/main/CONTRIBUTING.md
   - type: textarea
     id: bug-description
     attributes:
