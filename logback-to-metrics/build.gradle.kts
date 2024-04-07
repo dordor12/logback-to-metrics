@@ -8,13 +8,14 @@ object Meta {
     const val licenseUrl = "https://opensource.org/licenses/Apache-2.0"
     const val githubRepo = "dordor12/logback-to-metrics"
     const val developerId = "dordor12"
-    const val developerName = "Your Name"
-    const val developerOrganization = "ACME Corporation"
+    const val developerName = "Dor Amid"
+    const val developerOrganization = "dordor inc"
     const val developerOrganizationUrl = "https://yourdomain.com"
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 plugins {
@@ -42,11 +43,17 @@ val intTestImplementation by configurations.getting {
 configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
 
 dependencies {
-    testImplementation(libs.junit)
+     testImplementation(libs.junit)
 
-    intTestImplementation(libs.junit)
-    intTestImplementation(libs.bundles.testcontainers.junit)
-    intTestImplementation(libs.assertj)
+     intTestImplementation(libs.junit)
+     intTestImplementation(libs.bundles.testcontainers.junit)
+     intTestImplementation(libs.assertj)
+     api(libs.logback)
+     api(libs.micrometer)
+     api(libs.commonsCodec)
+     api(libs.logstashEncoder)
+     annotationProcessor(libs.lombok)
+     compileOnly(libs.lombok)
 }
 
 val intTest = task<Test>("intTest") {
