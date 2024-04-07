@@ -43,17 +43,22 @@ val intTestImplementation by configurations.getting {
 configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
 
 dependencies {
-     testImplementation(libs.junit)
-
      intTestImplementation(libs.junit)
+     intTestImplementation(libs.mockito)
      intTestImplementation(libs.bundles.testcontainers.junit)
      intTestImplementation(libs.assertj)
+
      api(libs.logback)
      api(libs.micrometer)
      api(libs.commonsCodec)
      api(libs.logstashEncoder)
      annotationProcessor(libs.lombok)
      compileOnly(libs.lombok)
+
+    testImplementation(libs.mockito)
+    testImplementation(libs.junit)
+    annotationProcessor(libs.junit)
+    testAnnotationProcessor(libs.junit)
 }
 
 val intTest = task<Test>("intTest") {

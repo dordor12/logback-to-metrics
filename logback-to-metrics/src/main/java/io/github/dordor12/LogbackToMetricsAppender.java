@@ -59,14 +59,13 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
 
     @Override
     public void append(ILoggingEvent eventObject) {
-        if (counters.size() >= maxCounters) {
-            return;
-        }
-
         var counterName = getCounterName(eventObject);
         var tags = getWhitelistedTags(eventObject);
         var counterId = getCounterId(counterName, tags);
-        if (!counters.contains(counterId)) {
+        if (!counters.containsKey(counterId)) {
+            if (counters.size() >= maxCounters) {
+                return;
+            }
             counters.put(counterId, Metrics.counter(getCounterName(eventObject), getWhitelistedTags(eventObject)));
         }
         counters.get(counterId).increment();
