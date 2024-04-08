@@ -13,8 +13,8 @@ nexusPublishing {
             val ossrhUsername = providers.environmentVariable("OSSRH_USERNAME")
             val ossrhPassword = providers.environmentVariable("OSSRH_PASSWORD")
             if (ossrhUsername.isPresent && ossrhPassword.isPresent) {
-                username.set(ossrhUsername.get())
-                password.set(ossrhPassword.get())
+                username = ossrhUsername
+                password = ossrhPassword
             }
         }
     }
