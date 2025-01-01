@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.acme.fancy.lib","l":"JavaLibraryTemplate"}];updateSearchResults();
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.github.dordor12","l":"LogbackToMetricsAppender"}];updateSearchResults();
