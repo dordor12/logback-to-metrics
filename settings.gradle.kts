@@ -1,3 +1,3 @@
-rootProject.name = "logback-to-metrics-root"
+rootProject.name = "logback-to-metrics"
 
 include("logback-to-metrics")
