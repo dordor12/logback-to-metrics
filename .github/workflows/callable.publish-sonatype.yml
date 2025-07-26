@@ -1,4 +1,4 @@
-name: Publish to Sonatype (Maven Central)
+name: Publish to Maven Central - Enhanced
 on:
   workflow_call:
 
@@ -20,20 +20,74 @@ jobs:
         with:
           cache-read-only: true
 
-      # note the following two steps are identical but different names for better DX in GitHub Actions UI
-      - name: Publish SNAPSHOT to Sonatype (Maven Central)
+      # Separate logic for snapshots - only publish, no staging operations
+      - name: Publish SNAPSHOT to Maven Central with Retry
         if: github.ref == 'refs/heads/main'
-        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: |
+          echo "Publishing SNAPSHOT version with retry logic..."
+          
+          MAX_RETRIES=5
+          RETRY_DELAY=60
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_RETRIES ]; do
+            echo "=== CI Attempt $ATTEMPT of $MAX_RETRIES ==="
+            echo "$(date): Starting SNAPSHOT publishing attempt..."
+            
+            if ./gradlew publishToMavenCentral --info --stacktrace; then
+              echo "🎉 SUCCESS! SNAPSHOT publishing completed on attempt $ATTEMPT"
+              exit 0
+            else
+              echo "❌ SNAPSHOT Attempt $ATTEMPT failed"
+              if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
+                sleep $RETRY_DELAY
+              fi
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+          
+          echo "💥 All $MAX_RETRIES SNAPSHOT attempts failed"
+          exit 1
         env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-          GPG_SIGNING_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-      - name: Publish RELEASE to Sonatype (Maven Central)
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.GPG_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
+          
+      # Full release process for tags - publish and release automatically
+      - name: Publish RELEASE to Maven Central with Retry
         if: github.ref_type == 'tag'
-        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: |
+          echo "Publishing RELEASE version with retry logic..."
+          
+          MAX_RETRIES=5
+          RETRY_DELAY=60
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_RETRIES ]; do
+            echo "=== CI Attempt $ATTEMPT of $MAX_RETRIES ==="
+            echo "$(date): Starting RELEASE publishing attempt..."
+            
+            if ./gradlew publishAndReleaseToMavenCentral --info --stacktrace; then
+              echo "🎉 SUCCESS! RELEASE publishing completed on attempt $ATTEMPT"
+              exit 0
+            else
+              echo "❌ RELEASE Attempt $ATTEMPT failed"
+              if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
+                sleep $RETRY_DELAY
+              fi
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+          
+          echo "💥 All $MAX_RETRIES RELEASE attempts failed"
+          exit 1
         env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-          GPG_SIGNING_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.GPG_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}

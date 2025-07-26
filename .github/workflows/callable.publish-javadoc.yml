@@ -42,7 +42,7 @@ jobs:
         env:
           LIBRARY_NAME: ${{ env.LIBRARY_NAME }}
         run: |
-          cd "$LIBRARY_NAME/build/docs/javadoc"
+          cd "logback-to-metrics/build/docs/javadoc"
           zip -r ../../../../javadoc.zip .
 
       - name: Upload artifact

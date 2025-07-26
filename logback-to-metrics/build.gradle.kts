@@ -21,8 +21,7 @@ java {
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
-    `maven-publish`
-    signing
+    id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 repositories {
@@ -83,50 +82,41 @@ tasks.named<Test>("test") {
     useJUnitPlatform()
 }
 
-signing {
-    val signingKey = providers.environmentVariable("GPG_SIGNING_KEY")
-    val signingPassphrase = providers.environmentVariable("GPG_SIGNING_PASSPHRASE")
-    if (signingKey.isPresent && signingPassphrase.isPresent) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-        val extension = extensions.getByName("publishing") as PublishingExtension
-        sign(extension.publications)
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-            from(components["java"])
-            pom {
-                name.set(project.name)
-                description.set(Meta.desc)
-                url.set("https://github.com/${Meta.githubRepo}")
-                licenses {
-                    license {
-                        name.set(Meta.license)
-                        url.set(Meta.licenseUrl)
-                    }
-                }
-                developers {
-                    developer {
-                        id.set(Meta.developerId)
-                        name.set(Meta.developerName)
-                        organization.set(Meta.developerOrganization)
-                        organizationUrl.set(Meta.developerOrganizationUrl)
-                    }
-                }
-                scm {
-                    url.set("https://github.com/${Meta.githubRepo}.git")
-                    connection.set("scm:git:git://github.com/${Meta.githubRepo}.git")
-                    developerConnection.set("scm:git:git://github.com/${Meta.githubRepo}.git")
-                }
-                issueManagement {
-                    url.set("https://github.com/${Meta.githubRepo}/issues")
-                }
+mavenPublishing {
+    coordinates("io.github.dordor12", "logback-to-metrics", project.version.toString())
+    
+    // Configure Maven Central publishing
+    publishToMavenCentral()
+    
+    // Enable signing for Maven Central (required)
+    signAllPublications()
+    
+    pom {
+        name.set("Logback to Metrics")
+        description.set(Meta.desc)
+        inceptionYear.set("2024")
+        url.set("https://github.com/${Meta.githubRepo}")
+        
+        licenses {
+            license {
+                name.set(Meta.license)
+                url.set(Meta.licenseUrl)
+                distribution.set(Meta.licenseUrl)
             }
+        }
+        
+        developers {
+            developer {
+                id.set(Meta.developerId)
+                name.set(Meta.developerName)
+                url.set("https://github.com/${Meta.developerId}")
+            }
+        }
+        
+        scm {
+            url.set("https://github.com/${Meta.githubRepo}")
+            connection.set("scm:git:git://github.com/${Meta.githubRepo}.git")
+            developerConnection.set("scm:git:ssh://git@github.com/${Meta.githubRepo}.git")
         }
     }
 }
@@ -142,10 +132,7 @@ tasks.jar {
     }
 }
 
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
+// Sources and Javadoc jars are automatically configured by the Vanniktech Maven Publish plugin
 
 // gradle locking of dependency versions
 //   *required+used for trivy scan
