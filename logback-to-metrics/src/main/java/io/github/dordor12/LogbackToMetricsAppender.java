@@ -21,6 +21,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 
+/**
+ * A Logback appender that converts log events into Micrometer metrics.
+ * This appender extracts key-value pairs from log events and creates counters
+ * based on configurable whitelist and blacklist filters.
+ */
 @Getter
 @Setter
 public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent> {
@@ -35,6 +40,10 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
     private String counterNamePrefix = "logback.to.metrics";
     private String counterNameSubfix = "counter";
 
+    /**
+     * Default constructor that initializes the appender with an empty output stream.
+     * The actual output is handled by creating metrics instead of writing to a stream.
+     */
     public LogbackToMetricsAppender() {
         this.setOutputStream(new OutputStream() {
             @Override
@@ -44,13 +53,25 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
         });
     }
 
-    //for logback to add values from xml
+    /**
+     * Adds a key to the whitelist for metric tag extraction.
+     * Only keys in the whitelist will be included as metric tags.
+     * This method is called by Logback when parsing XML configuration.
+     *
+     * @param whiteList the key to add to the whitelist
+     */
     public void addKvWhitelist(String whiteList) {
         this.kvWhitelist.add(whiteList);
         kvWhitelistMap.put(whiteList, true);
     }
 
-    //for logback to add values from xml
+    /**
+     * Adds a key to the blacklist for metric tag extraction.
+     * Keys in the blacklist will be excluded from metric tags.
+     * This method is called by Logback when parsing XML configuration.
+     *
+     * @param blackList the key to add to the blacklist
+     */
     public void addKvBlacklist(String blackList) {
         this.kvBlacklist.add(blackList);
         kvBlacklistMap.put(blackList, true);
