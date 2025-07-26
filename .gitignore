@@ -5,3 +5,8 @@
 build
 
 .idea
+qdrant_storage.env.maven-central
+example-project
+.env.maven-central.template
+.env.maven-central
+logback-to-metrics/qdrant_storage
