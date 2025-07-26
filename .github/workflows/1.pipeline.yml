@@ -48,6 +48,8 @@ jobs:
 
   gradle_release:
     name: Create release
+    permissions:
+      contents: write # Grant write permission for GITHUB_TOKEN to push changes and create releases
     uses: ./.github/workflows/callable.gradle-release.yml
     secrets: inherit
     with:
