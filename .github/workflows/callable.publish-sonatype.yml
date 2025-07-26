@@ -62,6 +62,10 @@ jobs:
         run: |
           echo "Publishing RELEASE version with retry logic..."
           
+          # Extract version from tag name (remove 'refs/tags/' prefix)
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          echo "Tag version: $TAG_VERSION"
+          
           MAX_RETRIES=5
           RETRY_DELAY=60
           ATTEMPT=1
@@ -70,7 +74,8 @@ jobs:
             echo "=== CI Attempt $ATTEMPT of $MAX_RETRIES ==="
             echo "$(date): Starting RELEASE publishing attempt..."
             
-            if ./gradlew publishAndReleaseToMavenCentral --info --stacktrace; then
+            # Override version property with tag version
+            if ./gradlew publishAndReleaseToMavenCentral -Pversion=$TAG_VERSION --info --stacktrace; then
               echo "🎉 SUCCESS! RELEASE publishing completed on attempt $ATTEMPT"
               exit 0
             else
