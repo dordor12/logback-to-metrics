@@ -54,6 +54,7 @@ Modify your application's `logback.xml` to include the `LogbackToMetricsAppender
 
 Customize the `LogbackToMetricsAppender` using the following parameters:
 
+### Counter Configuration
 | Parameter            | Description                                                                   | Default Value                                                     |
 |----------------------|-------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | `maxCounters`        | Maximum number of counters the appender can create.                          | `10000`                                                           |
@@ -62,16 +63,87 @@ Customize the `LogbackToMetricsAppender` using the following parameters:
 | `kvWhitelist`        | Whitelist of MDC key-value tags to include as counter tags.                  | (None) All keys are included by default.                          |
 | `kvBlacklist`        | Blacklist of MDC key-value tags to exclude from counter tags.                | (None) No keys are excluded by default.                           |
 
+### Histogram Configuration
+| Parameter                | Description                                                                   | Default Value                                                     |
+|--------------------------|-------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `enableAutoHistograms`   | Enable/disable automatic histogram creation for numeric values.              | `false`                                                           |
+| `maxHistograms`          | Maximum number of histograms the appender can create.                        | `10000`                                                           |
+| `histogramKvWhitelist`   | Whitelist of keys to consider for histogram creation.                        | (None) All keys are considered by default.                        |
+| `histogramKvBlacklist`   | Blacklist of keys to exclude from histogram creation.                        | (None) No keys are excluded by default.                           |
+| `histogramNameSubfix`    | Suffix for histogram metric names.                                           | `histogram`                                                       |
+
 Example `logback.xml` configuration:
 ```xml
 <appender name="LogbackToMetricsAppender" class="io.github.dordor12.LogbackToMetricsAppender">
+    <!-- Counter Configuration -->
     <maxCounters>10</maxCounters>
     <kvWhitelist>key1</kvWhitelist>
     <kvWhitelist>key2</kvWhitelist>
     <kvBlacklist>key3</kvBlacklist>
     <counterNamePrefix>my.app.metrics</counterNamePrefix>
+    
+    <!-- Histogram Configuration -->
+    <enableAutoHistograms>true</enableAutoHistograms>
+    <maxHistograms>5000</maxHistograms>
+    <histogramKvWhitelist>file_size</histogramKvWhitelist>
+    <histogramKvBlacklist>kafka_offset</histogramKvBlacklist>
 </appender>
 ```
+
+## Auto Histogram Feature
+
+The `logback-to-metrics` library can automatically create histograms for numeric values found in your logs. This feature is disabled by default and must be explicitly enabled.
+
+### How It Works
+
+When enabled, the appender scans log events for numeric key-value pairs in:
+- **MDC Properties**: Values set via `MDC.put(key, value)`
+- **Logstash Encoder JSON**: Key-value pairs in structured log output
+
+For any numeric value (int, Integer, long, Long, double, Double), a histogram is automatically created with the format:
+```
+{counterNamePrefix}.{log_message}.{key}.{histogramNameSubfix}
+```
+
+### Example Usage
+
+```java
+@GetMapping("/upload")
+public String uploadFile(@RequestParam("file") MultipartFile file) {
+    long processingTime = System.currentTimeMillis();
+    
+    // Process file...
+    
+    processingTime = System.currentTimeMillis() - processingTime;
+    
+    // These numeric values will automatically create histograms
+    log.info("File uploaded successfully", 
+        kv("file_size", file.getSize()),
+        kv("processing_time_ms", processingTime));
+    
+    return "success";
+}
+```
+
+This would create histograms:
+- `logback.to.metrics.File.uploaded.successfully.file_size.histogram`
+- `logback.to.metrics.File.uploaded.successfully.processing_time_ms.histogram`
+
+### Key Features
+
+- **Memory Safe**: Configurable maximum histogram limit prevents OOM issues
+- **Selective Creation**: Use whitelist/blacklist to control which keys create histograms
+- **Type Detection**: Automatically handles various numeric types
+- **Negative Value Handling**: Negative values are ignored (as per Micrometer DistributionSummary design)
+- **Toggle Control**: Can be enabled/disabled via configuration
+
+### Important Notes
+
+⚠️ **Default Behavior**: Auto histograms are **disabled by default** to prevent unintended resource usage.
+
+⚠️ **Memory Considerations**: Each histogram consumes memory. Use `maxHistograms` to prevent OOM issues in high-cardinality scenarios.
+
+⚠️ **Performance Impact**: Histogram creation and recording adds processing overhead. Monitor performance in high-throughput scenarios.
 
 ## Enhanced Structured Logging
 Leverage structured logging with the [Logstash Logback Encoder](https://github.com/logfellow/logstash-logback-encoder) for detailed, context-rich logs.
@@ -98,3 +170,5 @@ public String exampleEndpoint() {
 ```
 
 The `kvWhitelist` and `kvBlacklist` settings also apply to key-value pairs specified through the Logstash encoder, ensuring consistent tag filtering across your logs and metrics.
+
+Similarly, the `histogramKvWhitelist` and `histogramKvBlacklist` settings control which numeric values from the Logstash encoder are used for histogram creation.
