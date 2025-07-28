@@ -19,6 +19,11 @@ tasks.register("intTest") {
     description = "Runs integration tests in the main subproject"
 }
 
+tasks.register("exampleIntTest") {
+    dependsOn(":example:test")
+    description = "Runs integration tests in the example project"
+}
+
 tasks.register("javadoc") {
     dependsOn(":logback-to-metrics:javadoc")
     description = "Generates Javadoc for the main subproject"

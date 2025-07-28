@@ -172,3 +172,7 @@ public String exampleEndpoint() {
 The `kvWhitelist` and `kvBlacklist` settings also apply to key-value pairs specified through the Logstash encoder, ensuring consistent tag filtering across your logs and metrics.
 
 Similarly, the `histogramKvWhitelist` and `histogramKvBlacklist` settings control which numeric values from the Logstash encoder are used for histogram creation.
+
+## Example
+
+See the [example project](example/README.md) for a complete demonstration of the library's features, including automatic histogram creation and structured logging integration.

@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: demo
+logging:
+  level:
+    root: INFO
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+      base-path: /actuator  # default
+  endpoint:
+    prometheus:
+      enabled: true
