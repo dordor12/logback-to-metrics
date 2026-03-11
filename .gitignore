@@ -10,3 +10,4 @@ example-project
 .env.maven-central.template
 .env.maven-central
 logback-to-metrics/qdrant_storage
+.mcp.json

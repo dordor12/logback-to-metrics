@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <appender name="LogbackToMetricsAppender" class="io.github.dordor12.LogbackToMetricsAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <!-- Logstash encoder configuration goes here -->
-        </encoder>
-        
         <!-- Counter Configuration -->
         <maxCounters>5000</maxCounters>
         <counterNamePrefix>demo.app.metrics</counterNamePrefix>
