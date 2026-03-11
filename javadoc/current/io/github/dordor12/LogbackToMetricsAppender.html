@@ -71,10 +71,8 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
 <div class="inheritance">ch.qos.logback.core.spi.ContextAwareBase
-<div class="inheritance">ch.qos.logback.core.UnsynchronizedAppenderBase&lt;E&gt;
-<div class="inheritance">ch.qos.logback.core.OutputStreamAppender&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;
+<div class="inheritance">ch.qos.logback.core.UnsynchronizedAppenderBase&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;
 <div class="inheritance">io.github.dordor12.LogbackToMetricsAppender</div>
-</div>
 </div>
 </div>
 </div>
@@ -85,7 +83,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">LogbackToMetricsAppender</span>
-<span class="extends-implements">extends ch.qos.logback.core.OutputStreamAppender&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;</span></div>
+<span class="extends-implements">extends ch.qos.logback.core.UnsynchronizedAppenderBase&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;</span></div>
 <div class="block">A Logback appender that converts log events into Micrometer metrics.
  This appender extracts key-value pairs from log events and creates counters
  based on configurable whitelist and blacklist filters.</div>
@@ -96,9 +94,6 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="field-summary" id="field-summary">
 <h2>Field Summary</h2>
-<div class="inherited-list">
-<h3 id="fields-inherited-from-class-ch.qos.logback.core.OutputStreamAppender">Fields inherited from class&nbsp;ch.qos.logback.core.OutputStreamAppender</h3>
-<code>encoder, lock</code></div>
 <div class="inherited-list">
 <h3 id="fields-inherited-from-class-ch.qos.logback.core.UnsynchronizedAppenderBase">Fields inherited from class&nbsp;ch.qos.logback.core.UnsynchronizedAppenderBase</h3>
 <code>name, started</code></div>
@@ -116,9 +111,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">LogbackToMetricsAppender</a>()</code></div>
-<div class="col-last even-row-color">
-<div class="block">Default constructor that initializes the appender with an empty output stream.</div>
-</div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -153,18 +146,18 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds a key to the whitelist for metric tag extraction.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#append(ch.qos.logback.classic.spi.ILoggingEvent)" class="member-name-link">append</a><wbr>(ch.qos.logback.classic.spi.ILoggingEvent&nbsp;eventObject)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#start()" class="member-name-link">start</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-ch.qos.logback.core.OutputStreamAppender">Methods inherited from class&nbsp;ch.qos.logback.core.OutputStreamAppender</h3>
-<code>closeOutputStream, getEncoder, getOutputStream, isImmediateFlush, setEncoder, setImmediateFlush, setLayout, setOutputStream, start, stop, subAppend, writeOut</code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-ch.qos.logback.core.UnsynchronizedAppenderBase">Methods inherited from class&nbsp;ch.qos.logback.core.UnsynchronizedAppenderBase</h3>
-<code>addFilter, clearAllFilters, doAppend, getCopyOfAttachedFiltersList, getFilterChainDecision, getName, isStarted, setName, toString</code></div>
+<code>addFilter, clearAllFilters, doAppend, getCopyOfAttachedFiltersList, getFilterChainDecision, getName, isStarted, setName, stop, toString</code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-ch.qos.logback.core.spi.ContextAwareBase">Methods inherited from class&nbsp;ch.qos.logback.core.spi.ContextAwareBase</h3>
 <code>addError, addError, addInfo, addInfo, addStatus, addWarn, addWarn, getContext, getDeclaredOrigin, getStatusManager, setContext</code></div>
@@ -189,8 +182,6 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>LogbackToMetricsAppender</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">LogbackToMetricsAppender</span>()</div>
-<div class="block">Default constructor that initializes the appender with an empty output stream.
- The actual output is handled by creating metrics instead of writing to a stream.</div>
 </section>
 </li>
 </ul>
@@ -254,12 +245,24 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="start()">
+<h3>start</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">start</span>()</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code>start</code>&nbsp;in interface&nbsp;<code>ch.qos.logback.core.spi.LifeCycle</code></dd>
+<dt>Overrides:</dt>
+<dd><code>start</code>&nbsp;in class&nbsp;<code>ch.qos.logback.core.UnsynchronizedAppenderBase&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;</code></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="append(ch.qos.logback.classic.spi.ILoggingEvent)">
 <h3>append</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">append</span><wbr><span class="parameters">(ch.qos.logback.classic.spi.ILoggingEvent&nbsp;eventObject)</span></div>
+<div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">append</span><wbr><span class="parameters">(ch.qos.logback.classic.spi.ILoggingEvent&nbsp;eventObject)</span></div>
 <dl class="notes">
-<dt>Overrides:</dt>
-<dd><code>append</code>&nbsp;in class&nbsp;<code>ch.qos.logback.core.OutputStreamAppender&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;</code></dd>
+<dt>Specified by:</dt>
+<dd><code>append</code>&nbsp;in class&nbsp;<code>ch.qos.logback.core.UnsynchronizedAppenderBase&lt;ch.qos.logback.classic.spi.ILoggingEvent&gt;</code></dd>
 </dl>
 </section>
 </li>
