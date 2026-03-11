@@ -28,7 +28,7 @@ jobs:
           cache-read-only: true
 
       - name: Generate gradle.lockfile for trivy scan
-        run: gradle dependencies --write-locks
+        run: ./gradlew dependencies --write-locks
 
       - name: Run Trivy vulnerability scanner in repo mode
         uses: aquasecurity/trivy-action@master
