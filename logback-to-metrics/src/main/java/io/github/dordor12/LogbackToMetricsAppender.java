@@ -1,14 +1,12 @@
 package io.github.dordor12;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.OutputStreamAppender;
+import ch.qos.logback.core.UnsynchronizedAppenderBase;
+import ch.qos.logback.core.encoder.Encoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -17,7 +15,6 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import net.logstash.logback.encoder.LogstashEncoder;
-import org.apache.commons.codec.digest.DigestUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,40 +26,29 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent> {
-    private static ObjectMapper objectMapper = new ObjectMapper();
+public class LogbackToMetricsAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private Encoder<ILoggingEvent> encoder;
     private List<String> kvWhitelist = new ArrayList<>();
     private List<String> kvBlacklist = new ArrayList<>();
-    private Map<String, Boolean> kvWhitelistMap = new HashMap<>();
-    private Map<String, Boolean> kvBlacklistMap = new HashMap<>();
+    private Set<String> kvWhitelistSet = new HashSet<>();
+    private Set<String> kvBlacklistSet = new HashSet<>();
     private ConcurrentHashMap<String, Counter> counters = new ConcurrentHashMap<>();
     private Long maxCounters = 10000L;
     private String counterJoinString = ".";
     private String counterNamePrefix = "logback.to.metrics";
     private String counterNameSubfix = "counter";
-    
+
     // Histogram configuration
     private boolean enableAutoHistograms = false;
     private List<String> histogramKvWhitelist = new ArrayList<>();
     private List<String> histogramKvBlacklist = new ArrayList<>();
-    private Map<String, Boolean> histogramKvWhitelistMap = new HashMap<>();
-    private Map<String, Boolean> histogramKvBlacklistMap = new HashMap<>();
+    private Set<String> histogramKvWhitelistSet = new HashSet<>();
+    private Set<String> histogramKvBlacklistSet = new HashSet<>();
     private ConcurrentHashMap<String, DistributionSummary> histograms = new ConcurrentHashMap<>();
     private Long maxHistograms = 10000L;
     private String histogramNameSubfix = "histogram";
-
-    /**
-     * Default constructor that initializes the appender with an empty output stream.
-     * The actual output is handled by creating metrics instead of writing to a stream.
-     */
-    public LogbackToMetricsAppender() {
-        this.setOutputStream(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                // empty output stream
-            }
-        });
-    }
 
     /**
      * Adds a key to the whitelist for metric tag extraction.
@@ -73,7 +59,7 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
      */
     public void addKvWhitelist(String whiteList) {
         this.kvWhitelist.add(whiteList);
-        kvWhitelistMap.put(whiteList, true);
+        kvWhitelistSet.add(whiteList);
     }
 
     /**
@@ -85,7 +71,7 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
      */
     public void addKvBlacklist(String blackList) {
         this.kvBlacklist.add(blackList);
-        kvBlacklistMap.put(blackList, true);
+        kvBlacklistSet.add(blackList);
     }
 
     /**
@@ -97,7 +83,7 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
      */
     public void addHistogramKvWhitelist(String whiteList) {
         this.histogramKvWhitelist.add(whiteList);
-        histogramKvWhitelistMap.put(whiteList, true);
+        histogramKvWhitelistSet.add(whiteList);
     }
 
     /**
@@ -109,58 +95,103 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
      */
     public void addHistogramKvBlacklist(String blackList) {
         this.histogramKvBlacklist.add(blackList);
-        histogramKvBlacklistMap.put(blackList, true);
+        histogramKvBlacklistSet.add(blackList);
     }
 
+    @Override
+    public void start() {
+        if (encoder != null) {
+            encoder.start();
+        }
+        super.start();
+    }
+
+    /**
+     * Per-event context that caches all derived data to avoid redundant computation.
+     */
+    private static class EventContext {
+        final String counterName;
+        final List<Tag> tags;
+        final String counterId;
+        final JsonNode logstashJson;
+
+        EventContext(String counterName, List<Tag> tags, String counterId, JsonNode logstashJson) {
+            this.counterName = counterName;
+            this.tags = tags;
+            this.counterId = counterId;
+            this.logstashJson = logstashJson;
+        }
+    }
 
     @Override
-    public void append(ILoggingEvent eventObject) {
-        var counterName = getCounterName(eventObject);
-        var tags = getWhitelistedTags(eventObject);
-        var counterId = getCounterId(counterName, tags);
-        if (!counters.containsKey(counterId)) {
+    protected void append(ILoggingEvent eventObject) {
+        var ctx = buildEventContext(eventObject);
+
+        Counter counter = counters.get(ctx.counterId);
+        if (counter == null) {
             if (counters.size() >= maxCounters) {
                 return;
             }
-            counters.put(counterId, Metrics.counter(getCounterName(eventObject), getWhitelistedTags(eventObject)));
+            counter = counters.computeIfAbsent(ctx.counterId,
+                    k -> Metrics.counter(ctx.counterName, ctx.tags));
         }
-        counters.get(counterId).increment();
-        
+        counter.increment();
+
         // Create histograms for numeric values
-        createHistograms(eventObject);
+        if (enableAutoHistograms) {
+            createHistograms(eventObject, ctx);
+        }
     }
 
-    private String getCounterId(String counterName, List<Tag> tags) {
-        var tagsId = tags.stream()
-                .map(tag -> String.format("%s=%s", tag.getKey(), tag.getValue()))
-                .collect(Collectors.joining(counterJoinString));
+    private EventContext buildEventContext(ILoggingEvent eventObject) {
+        String counterName = getCounterName(eventObject);
+        JsonNode logstashJson = null;
 
-        return String.format("%s.%s", counterName, DigestUtils.md5Hex(tagsId));
-    }
-
-    private List<Tag> getWhitelistedTags(ILoggingEvent eventObject) {
-        var tags = eventObject.getMDCPropertyMap()
-                .entrySet()
-                .stream()
-                .filter(this::isTagKey)
-                .map(entry -> Tag.of(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toList());
-        var encoder = this.getEncoder();
-        if (encoder instanceof LogstashEncoder) {
-            var encoded = encoder.encode(eventObject);
+        var enc = getEncoder();
+        if (enc instanceof LogstashEncoder) {
+            byte[] encoded = enc.encode(eventObject);
             try {
-                var json = objectMapper.readTree(encoded);
-                tags.addAll(
-                        json.properties().stream()
-                                .filter(entry -> !entry.getKey().equals("@timestamp"))
-                                .filter(entry -> !entry.getValue().isObject() && isTagKey(entry))
-                                .map(entry -> Tag.of(entry.getKey(), getJsonValue(entry.getValue())))
-                                .toList()
-                );
+                logstashJson = objectMapper.readTree(encoded);
             } catch (IOException e) {
                 addError("failed to read logstash encoder json", e);
             }
         }
+
+        List<Tag> tags = buildWhitelistedTags(eventObject, logstashJson);
+        String counterId = getCounterId(counterName, tags);
+
+        return new EventContext(counterName, tags, counterId, logstashJson);
+    }
+
+    private String getCounterId(String counterName, List<Tag> tags) {
+        var sb = new StringBuilder(counterName.length() + tags.size() * 20);
+        sb.append(counterName);
+        for (Tag tag : tags) {
+            sb.append('.').append(tag.getKey()).append('=').append(tag.getValue());
+        }
+        return sb.toString();
+    }
+
+    private List<Tag> buildWhitelistedTags(ILoggingEvent eventObject, JsonNode logstashJson) {
+        var mdcMap = eventObject.getMDCPropertyMap();
+        var tags = new ArrayList<Tag>(mdcMap.size() + 3);
+
+        for (var entry : mdcMap.entrySet()) {
+            if (isTagKey(entry.getKey())) {
+                tags.add(Tag.of(entry.getKey(), entry.getValue()));
+            }
+        }
+
+        if (logstashJson != null) {
+            for (var entry : logstashJson.properties()) {
+                String key = entry.getKey();
+                JsonNode value = entry.getValue();
+                if (!"@timestamp".equals(key) && !value.isObject() && isTagKey(key)) {
+                    tags.add(Tag.of(key, getJsonValue(value)));
+                }
+            }
+        }
+
         tags.add(Tag.of("level", eventObject.getLevel().toString()));
         tags.add(Tag.of("logger_name", eventObject.getLoggerName()));
         tags.add(Tag.of("thread_name", eventObject.getThreadName()));
@@ -169,97 +200,110 @@ public class LogbackToMetricsAppender extends OutputStreamAppender<ILoggingEvent
 
     private String getJsonValue(JsonNode value) {
         if (value.isArray()) {
+            var sb = new StringBuilder();
             Iterator<JsonNode> iterator = ((ArrayNode) value).elements();
-            Iterable<JsonNode> iterable = () -> iterator;
-            return StreamSupport.stream(iterable.spliterator(), false)
-                    .map(this::getJsonValue)
-                    .collect(Collectors.joining(","));
+            boolean first = true;
+            while (iterator.hasNext()) {
+                if (!first) sb.append(',');
+                sb.append(getJsonValue(iterator.next()));
+                first = false;
+            }
+            return sb.toString();
         }
         return value.asText();
     }
 
     private String getCounterName(ILoggingEvent eventObject) {
-        return String.format("%s.%s.%s", counterNamePrefix, eventObject.getMessage().replaceAll("\\.", "").replaceAll(" ", counterJoinString), counterNameSubfix);
-    }
-
-    private boolean isTagKey(Map.Entry<String, ?> entry) {
-        if (!kvWhitelistMap.isEmpty())
-            return kvWhitelistMap.containsKey(entry.getKey()) && kvWhitelistMap.get(entry.getKey()) && !kvBlacklistMap.containsKey(entry.getKey());
-        return !kvBlacklistMap.containsKey(entry.getKey());
-    }
-
-    private void createHistograms(ILoggingEvent eventObject) {
-        // Only create histograms if the feature is enabled
-        if (!enableAutoHistograms) {
-            return;
+        String msg = eventObject.getMessage();
+        var sb = new StringBuilder(counterNamePrefix.length() + msg.length() + counterNameSubfix.length() + 2);
+        sb.append(counterNamePrefix).append('.');
+        for (int i = 0; i < msg.length(); i++) {
+            char c = msg.charAt(i);
+            if (c == '.') continue;
+            if (c == ' ') sb.append(counterJoinString);
+            else sb.append(c);
         }
-        
+        sb.append('.').append(counterNameSubfix);
+        return sb.toString();
+    }
+
+    private boolean isTagKey(String key) {
+        if (!kvWhitelistSet.isEmpty()) {
+            return kvWhitelistSet.contains(key) && !kvBlacklistSet.contains(key);
+        }
+        return !kvBlacklistSet.contains(key);
+    }
+
+    private void createHistograms(ILoggingEvent eventObject, EventContext ctx) {
         // Process MDC properties
-        eventObject.getMDCPropertyMap()
-                .entrySet()
-                .stream()
-                .filter(this::isHistogramKey)
-                .forEach(entry -> createHistogramForNumericValue(eventObject, entry.getKey(), entry.getValue()));
+        for (var entry : eventObject.getMDCPropertyMap().entrySet()) {
+            if (isHistogramKey(entry.getKey())) {
+                createHistogramForNumericValue(entry.getKey(), entry.getValue(), eventObject, ctx);
+            }
+        }
 
         // Process LogstashEncoder JSON properties
-        var encoder = this.getEncoder();
-        if (encoder instanceof LogstashEncoder) {
-            var encoded = encoder.encode(eventObject);
-            try {
-                var json = objectMapper.readTree(encoded);
-                json.properties().stream()
-                        .filter(entry -> !entry.getKey().equals("@timestamp"))
-                        .filter(entry -> !entry.getValue().isObject())
-                        .filter(this::isHistogramKey)
-                        .forEach(entry -> createHistogramForNumericValue(eventObject, entry.getKey(), getJsonValue(entry.getValue())));
-            } catch (IOException e) {
-                addError("failed to read logstash encoder json for histogram creation", e);
+        if (ctx.logstashJson != null) {
+            for (var entry : ctx.logstashJson.properties()) {
+                String key = entry.getKey();
+                JsonNode value = entry.getValue();
+                if (!"@timestamp".equals(key) && !value.isObject() && isHistogramKey(key)) {
+                    createHistogramForNumericValue(key, getJsonValue(value), eventObject, ctx);
+                }
             }
         }
     }
 
-    private boolean isHistogramKey(Map.Entry<String, ?> entry) {
-        if (!histogramKvWhitelistMap.isEmpty())
-            return histogramKvWhitelistMap.containsKey(entry.getKey()) && histogramKvWhitelistMap.get(entry.getKey()) && !histogramKvBlacklistMap.containsKey(entry.getKey());
-        return !histogramKvBlacklistMap.containsKey(entry.getKey());
+    private boolean isHistogramKey(String key) {
+        if (!histogramKvWhitelistSet.isEmpty()) {
+            return histogramKvWhitelistSet.contains(key) && !histogramKvBlacklistSet.contains(key);
+        }
+        return !histogramKvBlacklistSet.contains(key);
     }
 
-    private void createHistogramForNumericValue(ILoggingEvent eventObject, String key, String value) {
+    private void createHistogramForNumericValue(String key, String value, ILoggingEvent eventObject, EventContext ctx) {
         Double numericValue = parseNumericValue(value);
         if (numericValue != null) {
             var histogramName = getHistogramName(eventObject, key);
-            var tags = getWhitelistedTags(eventObject);
-            var histogramId = getCounterId(histogramName, tags);
-            
-            if (!histograms.containsKey(histogramId)) {
+            var histogramId = getCounterId(histogramName, ctx.tags);
+
+            DistributionSummary histogram = histograms.get(histogramId);
+            if (histogram == null) {
                 if (histograms.size() >= maxHistograms) {
                     return;
                 }
-                histograms.put(histogramId, DistributionSummary.builder(histogramName)
-                        .tags(tags)
-                        .register(Metrics.globalRegistry));
+                histogram = histograms.computeIfAbsent(histogramId,
+                        k -> DistributionSummary.builder(histogramName)
+                                .tags(ctx.tags)
+                                .register(Metrics.globalRegistry));
             }
-            histograms.get(histogramId).record(numericValue);
+            histogram.record(numericValue);
         }
     }
 
     private String getHistogramName(ILoggingEvent eventObject, String key) {
-        return String.format("%s.%s.%s.%s", counterNamePrefix, 
-                eventObject.getMessage().replaceAll("\\.", "").replaceAll(" ", counterJoinString), 
-                key, histogramNameSubfix);
+        String msg = eventObject.getMessage();
+        var sb = new StringBuilder(counterNamePrefix.length() + msg.length() + key.length() + histogramNameSubfix.length() + 3);
+        sb.append(counterNamePrefix).append('.');
+        for (int i = 0; i < msg.length(); i++) {
+            char c = msg.charAt(i);
+            if (c == '.') continue;
+            if (c == ' ') sb.append(counterJoinString);
+            else sb.append(c);
+        }
+        sb.append('.').append(key).append('.').append(histogramNameSubfix);
+        return sb.toString();
     }
 
     private Double parseNumericValue(String value) {
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
-        
+
         try {
-            // Try to parse as different numeric types
             if (value.contains(".")) {
                 return Double.parseDouble(value);
             } else {
-                // For integer values, convert to double
                 return Double.valueOf(Long.parseLong(value));
             }
         } catch (NumberFormatException e) {
