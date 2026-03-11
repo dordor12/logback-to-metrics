@@ -17,12 +17,15 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class LogbackToMetricsAppenderTest {
 
@@ -517,5 +520,52 @@ public class LogbackToMetricsAppenderTest {
                 .count();
         
         assertEquals(1L, histogramCount);
+    }
+
+    @Test
+    public void testLogstashEncoderEncodedOnlyOncePerEvent() throws JsonProcessingException {
+        var event = mock(ILoggingEvent.class);
+        mockBasicEvent(event, "encode once test");
+        when(event.getMDCPropertyMap()).thenReturn(Map.of("numeric_val", "100"));
+        when(logstashEncoder.encode(event)).thenReturn(new ObjectMapper().writeValueAsBytes(Map.of("json_key", "val")));
+
+        appender.append(event);
+
+        // Encoder should be called exactly once per event, not multiple times
+        verify(logstashEncoder, times(1)).encode(event);
+    }
+
+    @Test
+    public void testConcurrentAppendCorrectness() throws InterruptedException {
+        int threadCount = 8;
+        int eventsPerThread = 1000;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        for (int t = 0; t < threadCount; t++) {
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    for (int i = 0; i < eventsPerThread; i++) {
+                        var event = mock(ILoggingEvent.class);
+                        mockBasicEvent(event, "concurrent event");
+                        appender.append(event);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        assertTrue(doneLatch.await(30, TimeUnit.SECONDS));
+        executor.shutdown();
+
+        // All threads logged the same event name, so there should be exactly 1 counter
+        Counter counter = registry.get("logback.to.metrics.concurrent.event.counter").counter();
+        assertEquals(threadCount * eventsPerThread, (int) counter.count());
     }
 }

@@ -7,7 +7,6 @@ maven_publish_plugin = "0.34.0"
 release_plugin = "3.0.2"
 logback = "1.2.6"
 micrometer = "1.7.2"
-commonsCodec = "1.15"
 lombok = "1.18.22"
 logstashEncoder = "7.4"
 
@@ -19,7 +18,6 @@ testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "
 testcontainers_junit5 = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
-commonsCodec = { module = "commons-codec:commons-codec", version.ref = "commonsCodec" }
 lombok = { module = "org.projectlombok:lombok", version.ref="lombok" }
 logstashEncoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref="logstashEncoder" }
 

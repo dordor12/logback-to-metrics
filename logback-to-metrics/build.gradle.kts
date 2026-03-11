@@ -49,7 +49,6 @@ dependencies {
 
      api(libs.logback)
      api(libs.micrometer)
-     api(libs.commonsCodec)
      api(libs.logstashEncoder)
      annotationProcessor(libs.lombok)
      compileOnly(libs.lombok)
