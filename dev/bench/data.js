@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773526361189,
+  "lastUpdate": 1773527920999,
   "repoUrl": "https://github.com/dordor12/logback-to-metrics",
   "entries": {
     "JMH Benchmark": [
@@ -202,6 +202,74 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
             "value": 20044960.46319969,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "dordor12",
+            "username": "dordor12"
+          },
+          "committer": {
+            "name": "dordor12",
+            "username": "dordor12"
+          },
+          "id": "33a4088cfd9f0f1a32917c3f4fa146ba0c7f93ea",
+          "message": "feat: High-performance rewrite with cardinality protection & observability",
+          "timestamp": "2026-03-11T21:34:39Z",
+          "url": "https://github.com/dordor12/logback-to-metrics/pull/12/commits/33a4088cfd9f0f1a32917c3f4fa146ba0c7f93ea"
+        },
+        "date": 1773527920458,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.coldPathRegistration",
+            "value": 20254008.882228952,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPath",
+            "value": 4004639.6289343825,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathFullFeatures",
+            "value": 1163531.0179654495,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathNoObservability",
+            "value": 7158839.26108701,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithCardinality",
+            "value": 3977254.665669487,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithHistograms",
+            "value": 1163271.712072113,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventHotPath",
+            "value": 6258844.50292136,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
+            "value": 20197585.966176104,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
