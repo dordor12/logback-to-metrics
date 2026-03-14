@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773528291324,
+  "lastUpdate": 1773528863944,
   "repoUrl": "https://github.com/dordor12/logback-to-metrics",
   "entries": {
     "JMH Benchmark": [
@@ -412,6 +412,76 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
             "value": 20793325.868621826,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "GitHub Action",
+            "username": "actions-user",
+            "email": "action@github.com"
+          },
+          "committer": {
+            "name": "GitHub Action",
+            "username": "actions-user",
+            "email": "action@github.com"
+          },
+          "id": "89fef2b7b5ba519d6ad14a049cedd245aa16f627",
+          "message": " [Gradle Release Plugin] - pre tag commit:  '0.3.0'.",
+          "timestamp": "2026-03-14T22:45:54Z",
+          "url": "https://github.com/dordor12/logback-to-metrics/commit/89fef2b7b5ba519d6ad14a049cedd245aa16f627"
+        },
+        "date": 1773528863493,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.coldPathRegistration",
+            "value": 20259177.50492526,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPath",
+            "value": 3990082.327489505,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathFullFeatures",
+            "value": 1163695.9769901615,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathNoObservability",
+            "value": 7211437.83303343,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithCardinality",
+            "value": 3846649.0337585313,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithHistograms",
+            "value": 1179439.4394714483,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventHotPath",
+            "value": 6244401.974184006,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
+            "value": 20340944.223219782,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
