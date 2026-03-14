@@ -1,6 +1,7 @@
 package io.github.dordor12.demo.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
+import static net.logstash.logback.marker.Markers.append;
 
 @RestController
 @Slf4j
@@ -116,5 +118,62 @@ public class DemoController {
             kv("response_time_ms", 15)); // This will create histogram
             
         return Mono.just("Test metrics generated successfully!");
+    }
+
+    @GetMapping("/mdc-test")
+    public Mono<String> mdcTest() {
+        MDC.put("user_id", "mdc_user_42");
+        MDC.put("endpoint", "/mdc-test");
+        try {
+            log.info("MDC tag extraction test");
+        } finally {
+            MDC.clear();
+        }
+        return Mono.just("MDC test done");
+    }
+
+    @GetMapping("/marker-test")
+    public Mono<String> markerTest() {
+        // Single marker
+        log.info(append("endpoint", "/marker-test"), "Single marker request");
+
+        // Chained markers
+        log.info(append("endpoint", "/marker-test").and(append("user_id", "marker_user_7")),
+                "Chained marker request");
+
+        return Mono.just("Marker test done");
+    }
+
+    @GetMapping("/blacklist-test")
+    public Mono<String> blacklistTest() {
+        // sensitive_data is in kvBlacklist — should NOT appear as a tag
+        log.info("Blacklist validation request",
+            kv("endpoint", "/blacklist-test"),
+            kv("sensitive_data", "secret_value"),
+            kv("user_id", "user_safe"));
+        return Mono.just("Blacklist test done");
+    }
+
+    @GetMapping("/counter-only")
+    public Mono<String> counterOnly() {
+        // No numeric values — should only create a counter, no histograms
+        log.info("Counter only request",
+            kv("endpoint", "/counter-only"),
+            kv("user_id", "counter_user"));
+        return Mono.just("Counter only done");
+    }
+
+    @GetMapping("/mixed-sources")
+    public Mono<String> mixedSources() {
+        // Combine MDC + StructuredArguments + LogstashMarkers in one request
+        MDC.put("endpoint", "/mixed-sources");
+        try {
+            log.info(append("user_id", "marker_user"),
+                    "Mixed source request",
+                    kv("response_time_ms", 42));
+        } finally {
+            MDC.clear();
+        }
+        return Mono.just("Mixed sources done");
     }
 }
