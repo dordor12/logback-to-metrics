@@ -78,6 +78,11 @@ Customize the `LogbackToMetricsAppender` using the following parameters:
 | `enableCardinalityProtection`   | Auto-detect and blacklist high-cardinality tag keys at runtime.      | `false`       |
 | `maxTagValueCardinality`        | Max distinct values per tag key before auto-blacklisting.            | `100`         |
 
+### Self-Observability
+| Parameter                    | Description                                                              | Default Value |
+|------------------------------|--------------------------------------------------------------------------|---------------|
+| `enableSelfObservability`    | Register internal metrics for monitoring appender health and performance. | `true`        |
+
 When enabled, the appender tracks the number of distinct values for each tag key. If a key exceeds `maxTagValueCardinality`, it is automatically blacklisted: existing counters containing that tag are removed from the Micrometer registry and re-registered without the offending tag, preventing unbounded series in metrics backends.
 
 Histograms are excluded from cardinality protection — only counter tags are tracked and cleaned up.
@@ -101,6 +106,9 @@ Example `logback.xml` configuration:
     <!-- Cardinality Protection -->
     <enableCardinalityProtection>true</enableCardinalityProtection>
     <maxTagValueCardinality>50</maxTagValueCardinality>
+
+    <!-- Self-Observability (enabled by default, disable for max throughput) -->
+    <enableSelfObservability>false</enableSelfObservability>
 </appender>
 ```
 
@@ -176,7 +184,7 @@ The appender registers internal metrics (prefixed with `logback.to.metrics.appen
 | `appender.counters.saturated` | Gauge | 1 if counter circuit breaker tripped, 0 otherwise |
 | `appender.events.dropped` | Counter | Events skipped due to circuit breaker |
 
-These metrics are registered when `start()` is called (automatically by Logback during appender initialization).
+These metrics are registered when `start()` is called (automatically by Logback during appender initialization). Set `enableSelfObservability` to `false` to disable all internal metrics for maximum throughput (~70% improvement in benchmarks).
 
 ## Structured Arguments & LogstashMarkers
 
