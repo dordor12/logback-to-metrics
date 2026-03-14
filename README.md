@@ -25,14 +25,14 @@ Add the following dependency to your `pom.xml`:
 <dependency>
     <groupId>io.github.dordor12</groupId>
     <artifactId>logback-to-metrics</artifactId>
-    <version>1.0.0</version>
+    <version>0.2.1-SNAPSHOT</version>
 </dependency>
 ```
 
 ### Gradle Configuration
 Include this line in your `build.gradle`:
 ```groovy
-implementation 'io.github.dordor12:logback-to-metrics:1.0.0'
+implementation 'io.github.dordor12:logback-to-metrics:0.2.1-SNAPSHOT'
 ```
 
 ### Integrating with Logback
@@ -72,6 +72,21 @@ Customize the `LogbackToMetricsAppender` using the following parameters:
 | `histogramKvBlacklist`   | Blacklist of keys to exclude from histogram creation.                        | (None) No keys are excluded by default.                           |
 | `histogramNameSubfix`    | Suffix for histogram metric names.                                           | `histogram`                                                       |
 
+### Cardinality Protection
+| Parameter                       | Description                                                           | Default Value |
+|---------------------------------|-----------------------------------------------------------------------|---------------|
+| `enableCardinalityProtection`   | Auto-detect and blacklist high-cardinality tag keys at runtime.      | `false`       |
+| `maxTagValueCardinality`        | Max distinct values per tag key before auto-blacklisting.            | `100`         |
+
+### Self-Observability
+| Parameter                    | Description                                                              | Default Value |
+|------------------------------|--------------------------------------------------------------------------|---------------|
+| `enableSelfObservability`    | Register internal metrics for monitoring appender health and performance. | `true`        |
+
+When enabled, the appender tracks the number of distinct values for each tag key. If a key exceeds `maxTagValueCardinality`, it is automatically blacklisted: existing counters containing that tag are removed from the Micrometer registry and re-registered without the offending tag, preventing unbounded series in metrics backends.
+
+Histograms are excluded from cardinality protection — only counter tags are tracked and cleaned up.
+
 Example `logback.xml` configuration:
 ```xml
 <appender name="LogbackToMetricsAppender" class="io.github.dordor12.LogbackToMetricsAppender">
@@ -81,12 +96,19 @@ Example `logback.xml` configuration:
     <kvWhitelist>key2</kvWhitelist>
     <kvBlacklist>key3</kvBlacklist>
     <counterNamePrefix>my.app.metrics</counterNamePrefix>
-    
+
     <!-- Histogram Configuration -->
     <enableAutoHistograms>true</enableAutoHistograms>
     <maxHistograms>5000</maxHistograms>
     <histogramKvWhitelist>file_size</histogramKvWhitelist>
     <histogramKvBlacklist>kafka_offset</histogramKvBlacklist>
+
+    <!-- Cardinality Protection -->
+    <enableCardinalityProtection>true</enableCardinalityProtection>
+    <maxTagValueCardinality>50</maxTagValueCardinality>
+
+    <!-- Self-Observability (enabled by default, disable for max throughput) -->
+    <enableSelfObservability>false</enableSelfObservability>
 </appender>
 ```
 
@@ -98,7 +120,8 @@ The `logback-to-metrics` library can automatically create histograms for numeric
 
 When enabled, the appender scans log events for numeric key-value pairs in:
 - **MDC Properties**: Values set via `MDC.put(key, value)`
-- **Logstash Encoder JSON**: Key-value pairs in structured log output
+- **StructuredArguments**: Values from `kv("key", numericValue)`
+- **LogstashMarkers**: Values from `Markers.append("key", numericValue)`
 
 For any numeric value (int, Integer, long, Long, double, Double), a histogram is automatically created with the format:
 ```
@@ -111,16 +134,16 @@ For any numeric value (int, Integer, long, Long, double, Double), a histogram is
 @GetMapping("/upload")
 public String uploadFile(@RequestParam("file") MultipartFile file) {
     long processingTime = System.currentTimeMillis();
-    
+
     // Process file...
-    
+
     processingTime = System.currentTimeMillis() - processingTime;
-    
+
     // These numeric values will automatically create histograms
-    log.info("File uploaded successfully", 
+    log.info("File uploaded successfully",
         kv("file_size", file.getSize()),
         kv("processing_time_ms", processingTime));
-    
+
     return "success";
 }
 ```
@@ -139,40 +162,97 @@ This would create histograms:
 
 ### Important Notes
 
-⚠️ **Default Behavior**: Auto histograms are **disabled by default** to prevent unintended resource usage.
+**Default Behavior**: Auto histograms are **disabled by default** to prevent unintended resource usage.
 
-⚠️ **Memory Considerations**: Each histogram consumes memory. Use `maxHistograms` to prevent OOM issues in high-cardinality scenarios.
+**Memory Considerations**: Each histogram consumes memory. Use `maxHistograms` to prevent OOM issues in high-cardinality scenarios.
 
-⚠️ **Performance Impact**: Histogram creation and recording adds processing overhead. Monitor performance in high-throughput scenarios.
+**Performance Impact**: Histogram creation and recording adds processing overhead. Monitor performance in high-throughput scenarios.
 
-## Enhanced Structured Logging
-Leverage structured logging with the [Logstash Logback Encoder](https://github.com/logfellow/logstash-logback-encoder) for detailed, context-rich logs.
+## Self-Observability Metrics
 
-### Configuration Example
-Embed the encoder within the `LogbackToMetricsAppender` in your `logback.xml`:
-```xml
-<appender name="LogbackToMetricsAppender" class="io.github.dordor12.LogbackToMetricsAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-        <!-- Logstash encoder configuration goes here -->
-    </encoder>
-    <!-- Additional LogbackToMetricsAppender configuration -->
-</appender>
-```
+The appender registers internal metrics (prefixed with `logback.to.metrics.appender`) for monitoring its own health and performance:
 
-### Using Structured Arguments API
+| Metric | Type | Description |
+|--------|------|-------------|
+| `appender.append.duration` | Timer | Time spent in `append()` per event |
+| `appender.counters.created` | Counter | Total number of counters registered |
+| `appender.histograms.created` | Counter | Total number of histograms registered |
+| `appender.counters.active` | Gauge | Current number of active counters |
+| `appender.histograms.active` | Gauge | Current number of active histograms |
+| `appender.cardinality.blacklisted` | Counter | Number of tag keys auto-blacklisted |
+| `appender.cardinality.reregister.duration` | Timer | Time spent in counter re-registration |
+| `appender.counters.saturated` | Gauge | 1 if counter circuit breaker tripped, 0 otherwise |
+| `appender.events.dropped` | Counter | Events skipped due to circuit breaker |
+
+These metrics are registered when `start()` is called (automatically by Logback during appender initialization). Set `enableSelfObservability` to `false` to disable all internal metrics for maximum throughput (~70% improvement in benchmarks).
+
+## Structured Arguments & LogstashMarkers
+
+The appender extracts key-value pairs directly from [Logstash Logback Encoder](https://github.com/logfellow/logstash-logback-encoder) StructuredArguments and LogstashMarkers — no encoder configuration required.
+
+### StructuredArguments
 ```java
-@GetMapping("/ping")
-public String exampleEndpoint() {
-    log.info("Processing request", kv("param1", "value1"), kv("param2", "value2"));
-    log.info("Request complete", array("metrics", "metric1", "metric2"));
-    return "pong";
-}
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
+log.info("Processing request", kv("endpoint", "/api/v1"), kv("user_id", "u123"));
 ```
 
-The `kvWhitelist` and `kvBlacklist` settings also apply to key-value pairs specified through the Logstash encoder, ensuring consistent tag filtering across your logs and metrics.
+### LogstashMarkers
+```java
+import static net.logstash.logback.marker.Markers.append;
 
-Similarly, the `histogramKvWhitelist` and `histogramKvBlacklist` settings control which numeric values from the Logstash encoder are used for histogram creation.
+log.info(append("region", "us-east-1").and(append("env", "prod")), "Request routed");
+```
+
+Both StructuredArguments and LogstashMarkers are extracted as metric tags alongside MDC properties. The `kvWhitelist` and `kvBlacklist` settings apply uniformly to all tag sources (MDC, StructuredArguments, LogstashMarkers).
+
+Similarly, the `histogramKvWhitelist` and `histogramKvBlacklist` settings control which numeric values from any source are used for histogram creation.
+
+## Performance
+
+The appender is designed for high-throughput logging pipelines. It extracts data directly from event objects (no JSON round-tripping), uses `CacheKey`-based lookups for zero-allocation hot paths, and includes circuit breakers when metric limits are reached.
+
+### Benchmark Results
+
+Measured with JMH using 20 realistic `LoggingEvent` objects (MDC tags, StructuredArguments, LogstashMarkers, numeric values, mixed levels/loggers) on an Apple M-series chip, single thread:
+
+| Scenario | Throughput |
+|----------|-----------|
+| Single event hot path (no observability) | **55.1M ops/s** |
+| Cold path — new counter registration | **40.7M ops/s** |
+| Single event hot path (with observability) | **17.5M ops/s** |
+| Realistic 20-event mix (no observability) | **15.9M ops/s** |
+| Realistic 20-event mix (with observability) | **9.2M ops/s** |
+| Realistic + cardinality protection | **8.1M ops/s** |
+| Realistic + histograms + cardinality + observability | **2.5M ops/s** |
+
+### Comparison with Logging Frameworks
+
+| Framework / Appender | Throughput | Source |
+|---------------------|-----------|--------|
+| **logback-to-metrics** realistic hot path | **15.9M ops/s** | This project |
+| **logback-to-metrics** full features | **2.5M ops/s** | This project |
+| Logback noop appender | 12–42M ops/s | [logback.qos.ch](https://logback.qos.ch/performance.html) |
+| Logback sync file appender | ~1.8M ops/s | [Terse Systems](https://tersesystems.com/blog/2019/06/03/application-logging-in-java-part-6/) |
+| Logback async disruptor | ~3.7M ops/s | [Terse Systems](https://tersesystems.com/blog/2019/06/03/application-logging-in-java-part-6/) |
+| Logback sync (official) | ~2.2M ops/s | [logback.qos.ch](https://logback.qos.ch/performance.html) |
+| Log4j2 async file | ~903K ops/s | [OpenElements](https://github.com/OpenElements/java-logger-benchmark) |
+| Chronicle Logger async | ~2.2M ops/s | [OpenElements](https://github.com/OpenElements/java-logger-benchmark) |
+
+Even with all features enabled (histograms + cardinality protection + self-observability), the appender matches Logback's own sync throughput and outperforms most file-writing appenders. In practice, disk/network I/O in other appenders in your pipeline will always be the bottleneck — not metric extraction.
+
+### Live Benchmark Dashboard
+
+Benchmark results are tracked across commits and published automatically via CI:
+
+[![JMH Benchmark](https://img.shields.io/badge/JMH-Benchmark%20Dashboard-blue)](https://dordor12.github.io/logback-to-metrics/dev/bench/)
+
+### Run Benchmarks Locally
+
+```bash
+./gradlew :logback-to-metrics:jmh
+```
 
 ## Example
 
-See the [example project](example/README.md) for a complete demonstration of the library's features, including automatic histogram creation and structured logging integration.
+See the [example project](example/README.md) for a complete demonstration of the library's features, including automatic histogram creation, cardinality protection, and structured logging integration.

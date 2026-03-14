@@ -9,6 +9,7 @@ logback = "1.2.6"
 micrometer = "1.7.2"
 lombok = "1.18.22"
 logstashEncoder = "7.4"
+jmh = "1.37"
 
 [libraries]
 junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
@@ -20,6 +21,8 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
 lombok = { module = "org.projectlombok:lombok", version.ref="lombok" }
 logstashEncoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref="logstashEncoder" }
+jmh_core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh_generator = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 
 [bundles]
 testcontainers_junit = ["testcontainers", "testcontainers_junit5"]

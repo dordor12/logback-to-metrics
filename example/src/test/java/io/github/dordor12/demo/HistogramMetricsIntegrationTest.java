@@ -233,6 +233,200 @@ class HistogramMetricsIntegrationTest {
         assertThat(prometheusMetrics).containsPattern("histogram_sum\\{.*\\} [1-9]\\d*\\.\\d+");
     }
 
+    @Test
+    void shouldAutoBlacklistHighCardinalityTagsAndCleanupMetrics() {
+        // When: Call /cardinality-test endpoint 60+ times (exceeds limit of 50)
+        for (int i = 0; i < 60; i++) {
+            ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/cardinality-test", String.class);
+            assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        }
+
+        // Then: requestId tag should no longer appear in counter metrics
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should still exist for the cardinality test request
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Cardinality.test.request.counter");
+
+        // But the requestId tag should NOT appear (it was auto-blacklisted)
+        // After re-registration, counters should not have requestId tag
+        long countersWithRequestId = prometheusMetrics.lines()
+            .filter(line -> line.contains("demo.app.metrics.Cardinality.test.request.counter"))
+            .filter(line -> line.contains("requestId="))
+            .count();
+        assertThat(countersWithRequestId).isEqualTo(0);
+
+        // Appender self-observability metrics are registered in Metrics.globalRegistry
+        // during Logback startup. They may not be visible in the Spring-managed MeterRegistry
+        // depending on initialization order, so we verify via the global registry directly.
+        assertThat(io.micrometer.core.instrument.Metrics.globalRegistry.find(
+            "logback.to.metrics.appender.counters.active").gauge()).isNotNull();
+    }
+
+    @Test
+    void shouldExtractTagsFromMDCProperties() {
+        // When: Call endpoint that sets MDC tags
+        ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/mdc-test", String.class);
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should exist with MDC-sourced tags
+        assertThat(prometheusMetrics).contains("demo.app.metrics.MDC.tag.extraction.test.counter");
+        assertThat(prometheusMetrics).contains("user_id=\"mdc_user_42\"");
+        assertThat(prometheusMetrics).contains("endpoint=\"/mdc-test\"");
+    }
+
+    @Test
+    void shouldExtractTagsFromLogstashMarkers() {
+        // When: Call endpoint that uses Markers.append()
+        ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/marker-test", String.class);
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Single marker
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Single.marker.request.counter");
+        assertThat(prometheusMetrics).contains("endpoint=\"/marker-test\"");
+
+        // Chained markers — both tags present
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Chained.marker.request.counter");
+        assertThat(prometheusMetrics).contains("user_id=\"marker_user_7\"");
+    }
+
+    @Test
+    void shouldExcludeBlacklistedTagsFromCounters() {
+        // When: Call endpoint with a blacklisted tag (sensitive_data)
+        ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/blacklist-test", String.class);
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should exist
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Blacklist.validation.request.counter");
+
+        // Whitelisted tags should be present
+        assertThat(prometheusMetrics).contains("endpoint=\"/blacklist-test\"");
+        assertThat(prometheusMetrics).contains("user_id=\"user_safe\"");
+
+        // Blacklisted tag should NOT be present
+        long linesWithSensitiveData = prometheusMetrics.lines()
+            .filter(line -> line.contains("demo.app.metrics.Blacklist.validation.request.counter"))
+            .filter(line -> line.contains("sensitive_data"))
+            .count();
+        assertThat(linesWithSensitiveData).isEqualTo(0);
+    }
+
+    @Test
+    void shouldCreateCounterWithoutHistogramWhenNoNumericValues() {
+        // When: Call endpoint with no numeric kv values
+        ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/counter-only", String.class);
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should exist
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Counter.only.request.counter");
+
+        // No histogram should exist for this message
+        assertThat(prometheusMetrics).doesNotContain("demo.app.metrics.Counter.only.request.histogram");
+    }
+
+    @Test
+    void shouldCombineTagsFromMDCStructuredArgsAndMarkers() {
+        // When: Call endpoint that combines MDC + kv() + Markers.append()
+        ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/mixed-sources", String.class);
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should exist with tags from all three sources
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Mixed.source.request.counter");
+        // Marker-sourced tag
+        assertThat(prometheusMetrics).contains("user_id=\"marker_user\"");
+        // MDC-sourced tag
+        assertThat(prometheusMetrics).contains("endpoint=\"/mixed-sources\"");
+        // Histogram should also exist (response_time_ms=42 from structured arg)
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Mixed.source.request.response_time_ms.histogram");
+    }
+
+    @Test
+    void shouldVerifyCounterNamePrefixFromConfiguration() {
+        // The logback.xml sets counterNamePrefix=demo.app.metrics
+        // When: Call any endpoint
+        restTemplate.getForEntity(baseUrl + "/counter-only", String.class);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // All counters should use the configured prefix
+        long countersWithPrefix = prometheusMetrics.lines()
+            .filter(line -> line.contains("_counter") || line.contains(".counter"))
+            .filter(line -> !line.startsWith("#"))
+            .filter(line -> line.contains("demo.app.metrics."))
+            .count();
+        assertThat(countersWithPrefix).isGreaterThanOrEqualTo(1);
+
+        // No counters should have the default prefix
+        long countersWithDefaultPrefix = prometheusMetrics.lines()
+            .filter(line -> line.contains("logback.to.metrics.Counter"))
+            .filter(line -> !line.startsWith("#"))
+            .count();
+        assertThat(countersWithDefaultPrefix).isEqualTo(0);
+    }
+
+    @Test
+    void shouldRegisterSelfObservabilityMetrics() {
+        // Self-observability is enabled by default in logback.xml
+        // Trigger some activity first
+        restTemplate.getForEntity(baseUrl + "/log", String.class);
+
+        // Check self-observability metrics in global registry
+        var globalRegistry = io.micrometer.core.instrument.Metrics.globalRegistry;
+
+        assertThat(globalRegistry.find("logback.to.metrics.appender.append.duration").timer())
+            .as("append duration timer").isNotNull();
+        assertThat(globalRegistry.find("logback.to.metrics.appender.counters.created").counter())
+            .as("counters created counter").isNotNull();
+        assertThat(globalRegistry.find("logback.to.metrics.appender.counters.active").gauge())
+            .as("counters active gauge").isNotNull();
+        assertThat(globalRegistry.find("logback.to.metrics.appender.histograms.active").gauge())
+            .as("histograms active gauge").isNotNull();
+        assertThat(globalRegistry.find("logback.to.metrics.appender.counters.saturated").gauge())
+            .as("counters saturated gauge").isNotNull();
+        assertThat(globalRegistry.find("logback.to.metrics.appender.events.dropped").counter())
+            .as("events dropped counter").isNotNull();
+
+        // Append timer should have recorded at least one sample
+        var timer = globalRegistry.find("logback.to.metrics.appender.append.duration").timer();
+        assertThat(timer.count()).isGreaterThanOrEqualTo(1);
+
+        // Counters created should be > 0
+        var created = globalRegistry.find("logback.to.metrics.appender.counters.created").counter();
+        assertThat(created.count()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    void shouldTrackFixedTagsOnEveryCounter() {
+        // Fixed tags (level, logger_name, thread_name) should always be present
+        restTemplate.getForEntity(baseUrl + "/counter-only", String.class);
+
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Find counter lines for our metric
+        long linesWithLevel = prometheusMetrics.lines()
+            .filter(line -> line.contains("demo.app.metrics.Counter.only.request.counter"))
+            .filter(line -> !line.startsWith("#"))
+            .filter(line -> line.contains("level=\""))
+            .count();
+        assertThat(linesWithLevel).isGreaterThanOrEqualTo(1);
+
+        long linesWithLoggerName = prometheusMetrics.lines()
+            .filter(line -> line.contains("demo.app.metrics.Counter.only.request.counter"))
+            .filter(line -> !line.startsWith("#"))
+            .filter(line -> line.contains("logger_name=\""))
+            .count();
+        assertThat(linesWithLoggerName).isGreaterThanOrEqualTo(1);
+    }
+
     private String getPrometheusMetrics() {
         // First try prometheus endpoint
         ResponseEntity<String> prometheusResponse = restTemplate.getForEntity(

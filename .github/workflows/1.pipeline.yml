@@ -46,6 +46,14 @@ jobs:
     uses: ./.github/workflows/callable.integration-test.yml
     needs: build
 
+  benchmark:
+    name: JMH Benchmarks
+    permissions:
+      contents: write
+      deployments: write
+    uses: ./.github/workflows/callable.benchmark.yml
+    needs: build
+
   gradle_release:
     name: Create release
     permissions:
