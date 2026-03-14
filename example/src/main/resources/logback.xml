@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <appender name="LogbackToMetricsAppender" class="io.github.dordor12.LogbackToMetricsAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <!-- Logstash encoder configuration goes here -->
-        </encoder>
-        
         <!-- Counter Configuration -->
         <maxCounters>5000</maxCounters>
         <counterNamePrefix>demo.app.metrics</counterNamePrefix>
         <kvWhitelist>user_id</kvWhitelist>
         <kvWhitelist>endpoint</kvWhitelist>
+        <kvWhitelist>requestId</kvWhitelist>
         <kvBlacklist>sensitive_data</kvBlacklist>
         
         <!-- Histogram Configuration -->
@@ -19,6 +16,10 @@
         <histogramKvWhitelist>file_size_bytes</histogramKvWhitelist>
         <histogramKvWhitelist>processing_duration</histogramKvWhitelist>
         <histogramKvBlacklist>kafka_offset</histogramKvBlacklist>
+
+        <!-- Cardinality Protection -->
+        <enableCardinalityProtection>true</enableCardinalityProtection>
+        <maxTagValueCardinality>50</maxTagValueCardinality>
     </appender>
 
     <!-- Reference the new appender -->

@@ -233,6 +233,35 @@ class HistogramMetricsIntegrationTest {
         assertThat(prometheusMetrics).containsPattern("histogram_sum\\{.*\\} [1-9]\\d*\\.\\d+");
     }
 
+    @Test
+    void shouldAutoBlacklistHighCardinalityTagsAndCleanupMetrics() {
+        // When: Call /cardinality-test endpoint 60+ times (exceeds limit of 50)
+        for (int i = 0; i < 60; i++) {
+            ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/cardinality-test", String.class);
+            assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        }
+
+        // Then: requestId tag should no longer appear in counter metrics
+        String prometheusMetrics = getPrometheusMetrics();
+
+        // Counter should still exist for the cardinality test request
+        assertThat(prometheusMetrics).contains("demo.app.metrics.Cardinality.test.request.counter");
+
+        // But the requestId tag should NOT appear (it was auto-blacklisted)
+        // After re-registration, counters should not have requestId tag
+        long countersWithRequestId = prometheusMetrics.lines()
+            .filter(line -> line.contains("demo.app.metrics.Cardinality.test.request.counter"))
+            .filter(line -> line.contains("requestId="))
+            .count();
+        assertThat(countersWithRequestId).isEqualTo(0);
+
+        // Appender self-observability metrics are registered in Metrics.globalRegistry
+        // during Logback startup. They may not be visible in the Spring-managed MeterRegistry
+        // depending on initialization order, so we verify via the global registry directly.
+        assertThat(io.micrometer.core.instrument.Metrics.globalRegistry.find(
+            "logback.to.metrics.appender.counters.active").gauge()).isNotNull();
+    }
+
     private String getPrometheusMetrics() {
         // First try prometheus endpoint
         ResponseEntity<String> prometheusResponse = restTemplate.getForEntity(

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.util.Random;
+import java.util.UUID;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
@@ -81,6 +82,16 @@ public class DemoController {
             kv("endpoint", "/data"));
             
         return Mono.just("Data processed: " + dataSize + " bytes");
+    }
+
+    @GetMapping("/cardinality-test")
+    public Mono<String> cardinalityTest() {
+        String uniqueId = UUID.randomUUID().toString();
+        log.info("Cardinality test request",
+            kv("requestId", uniqueId),
+            kv("endpoint", "/cardinality-test"),
+            kv("response_time_ms", 10 + random.nextInt(50)));
+        return Mono.just("Cardinality test: " + uniqueId);
     }
 
     @GetMapping("/metrics/test")

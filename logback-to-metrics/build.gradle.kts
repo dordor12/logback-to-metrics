@@ -33,6 +33,10 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output
         runtimeClasspath += sourceSets.main.get().output
     }
+    create("jmh") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
 }
 
 val intTestImplementation by configurations.getting {
@@ -40,6 +44,12 @@ val intTestImplementation by configurations.getting {
 }
 
 configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
+
+val jmhImplementation by configurations.getting {
+    extendsFrom(configurations.implementation.get())
+}
+
+configurations["jmhRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
 
 dependencies {
      intTestImplementation(libs.junit)
@@ -57,6 +67,9 @@ dependencies {
     testImplementation(libs.junit)
     annotationProcessor(libs.junit)
     testAnnotationProcessor(libs.junit)
+
+    jmhImplementation(libs.jmh.core)
+    add("jmhAnnotationProcessor", libs.jmh.generator)
 }
 
 val intTest = task<Test>("intTest") {
@@ -75,6 +88,22 @@ val intTest = task<Test>("intTest") {
 }
 
 tasks.check { dependsOn(intTest) }
+
+val jmhResultsDir = layout.buildDirectory.dir("reports/jmh")
+
+val jmh = task<JavaExec>("jmh") {
+    description = "Runs JMH performance benchmarks."
+    group = "verification"
+
+    mainClass.set("org.openjdk.jmh.Main")
+    classpath = sourceSets["jmh"].runtimeClasspath
+    shouldRunAfter("test")
+
+    doFirst {
+        jmhResultsDir.get().asFile.mkdirs()
+    }
+    args("-rf", "json", "-rff", jmhResultsDir.get().file("results.json").asFile.absolutePath)
+}
 
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
