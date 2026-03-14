@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773528284126,
+  "lastUpdate": 1773528291324,
   "repoUrl": "https://github.com/dordor12/logback-to-metrics",
   "entries": {
     "JMH Benchmark": [
@@ -342,6 +342,76 @@ window.BENCHMARK_DATA = {
           {
             "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
             "value": 20235617.94008305,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Dor Amid",
+            "username": "dordor12",
+            "email": "50987668+dordor12@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "46cc6a7130b573a4cef0dc8a5d14c7595dedd5be",
+          "message": "feat: High-performance rewrite with cardinality protection & observability (#12)\n\n* feat: High-performance rewrite with cardinality protection, self-observability & JMH benchmarks\n\n- Rewrite appender to extract data directly from event objects (no JSON round-tripping)\n- Add CacheKey record for zero-allocation hot-path lookups\n- Add circuit breaker flags for counter/histogram saturation\n- Add runtime cardinality protection with auto-blacklisting of high-cardinality tags\n- Add self-observability metrics (timers, counters, gauges) with toggle flag\n- Add JMH benchmark suite with realistic 20-event workload (55M+ ops/s hot path)\n- Add benchmark CI workflow with GitHub Pages dashboard (benchmark-action)\n- Extract StructuredArguments and LogstashMarkers directly (no encoder needed)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\n\n* docs: Add enableSelfObservability flag to README configuration\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\n\n* test: Add integration tests for MDC, LogstashMarkers, blacklist, counter-only, mixed sources, self-observability\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\n\n* fix: Fix flaky testSelfMetricsRegistered — check appender fields instead of global registry gauges\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Dor Amid <dor.amid@taboola.com>\nCo-authored-by: Claude Opus 4.6 <noreply@anthropic.com>",
+          "timestamp": "2026-03-14T22:40:58Z",
+          "url": "https://github.com/dordor12/logback-to-metrics/commit/46cc6a7130b573a4cef0dc8a5d14c7595dedd5be"
+        },
+        "date": 1773528290842,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.coldPathRegistration",
+            "value": 20549114.272717517,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPath",
+            "value": 4028420.759441896,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathFullFeatures",
+            "value": 1148209.3749419225,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathNoObservability",
+            "value": 7130330.488511068,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithCardinality",
+            "value": 3915471.1562540224,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.realisticHotPathWithHistograms",
+            "value": 1163623.5865568542,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventHotPath",
+            "value": 6252439.388303803,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "io.github.dordor12.LogbackToMetricsAppenderBenchmark.singleEventNoObservability",
+            "value": 20793325.868621826,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
